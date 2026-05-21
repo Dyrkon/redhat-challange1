@@ -19,20 +19,40 @@ bool is_current_or_parent(char file_name[]) {
     return strcmp(file_name, ".") == 0 || strcmp(file_name, "..") == 0;
 }
 
+static void format_mode(mode_t mode, char out[11]) {
+    if      (S_ISDIR(mode))  out[0] = 'd';
+    else if (S_ISLNK(mode))  out[0] = 'l';
+    else if (S_ISCHR(mode))  out[0] = 'c';
+    else if (S_ISBLK(mode))  out[0] = 'b';
+    else if (S_ISFIFO(mode)) out[0] = 'p';
+    else if (S_ISSOCK(mode)) out[0] = 's';
+    else                     out[0] = '-';
+
+    out[1] = (mode & S_IRUSR) ? 'r' : '-';
+    out[2] = (mode & S_IWUSR) ? 'w' : '-';
+    out[3] = (mode & S_IXUSR) ? 'x' : '-';
+    out[4] = (mode & S_IRGRP) ? 'r' : '-';
+    out[5] = (mode & S_IWGRP) ? 'w' : '-';
+    out[6] = (mode & S_IXGRP) ? 'x' : '-';
+    out[7] = (mode & S_IROTH) ? 'r' : '-';
+    out[8] = (mode & S_IWOTH) ? 'w' : '-';
+    out[9] = (mode & S_IXOTH) ? 'x' : '-';
+    out[10] = '\0';
+}
+
 void write_file_information(const struct stat * sb, char file_name[]) {
     struct passwd *pw;
     char buf[64];
+    char mode_str[11];
     struct tm tm_local;
-
-    printf("%c%c%c ",
-        (sb->st_mode & S_IRUSR) ? 'r' : '-',
-        (sb->st_mode & S_IWUSR) ? 'w' : '-',
-        (sb->st_mode & S_IXUSR) ? 'x' : '-');
 
     if ((pw = getpwuid(sb->st_uid)) == NULL) {
         fprintf(stderr, "Failed to get user details %s.\n", file_name);
         return;
     }
+
+    format_mode(sb->st_mode, mode_str);
+    printf("%s ", mode_str);
 
     printf("%s ", pw->pw_name);
     

@@ -12,7 +12,7 @@ void print_usage(void) {
     fprintf(stderr, "Usage: ./mini-grep [-q] -e PATTERN [FILE...]\n");
 }
 
-int run_regex_on_stream(FILE *file) {
+int run_regex_on_stream(FILE *file, char* file_name) {
     char *line = NULL;
     size_t capacity = 0;
     ssize_t length;
@@ -25,7 +25,7 @@ int run_regex_on_stream(FILE *file) {
         if (regex_result == 0)
         {
             if (!no_line_numbers) {
-                printf("%d: %s", line_index, line);
+                printf("%s:%d: %s", file_name, line_index, line);
                 any_match = true;
             } else {
                 printf("%s", line);
@@ -46,14 +46,14 @@ int run_regex_on_file(char file_name[]) {
         return 2;
     }
 
-    any_match = run_regex_on_stream(file);
+    any_match = run_regex_on_stream(file, file_name);
 
     fclose(file);
     return any_match;
 }
 
 int run_regex_on_stdin(void) {
-    return run_regex_on_stream(stdin);
+    return run_regex_on_stream(stdin, "stdin");
 } 
 
 int main(int argc, char* argv[]) {
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
                 break;
             case 'e':
                 if (has_e) {
-                    fprintf(stderr, "Multiple paters are not supported.\n");
+                    fprintf(stderr, "Multiple patterns are not supported.\n");
                     regfree(&regex);
                     exit(2);
                 }
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
         for (int i = optind; i < argc; i++) {
             regex_result = run_regex_on_file(argv[i]);
             if (regex_result == 2) exit(2);
-            any_match = any_match ? true : regex_result;
+            any_match = any_match || (regex_result == 1);
         }
     }
 
